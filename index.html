@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Control de Sala</title>
+  <style>
+    html,body{height:100%;margin:0;background:#fff}
+    .top{position:fixed;inset:0 0 auto 0;height:56px;display:flex;align-items:center;gap:12px;padding:0 14px;background:#ffffffee;border-bottom:1px solid #e5e7eb;backdrop-filter:blur(6px);z-index:2;font-family:system-ui,-apple-system,Inter,Segoe UI,Roboto,Arial}
+    .top h1{margin:0;font-size:16px;font-weight:800}
+    .frame{position:absolute;inset:56px 0 0 0}
+    iframe{width:100%;height:100%;border:0}
+  </style>
+</head>
+<body>
+  <div class="top"><h1 id="ttl">Control de Sala</h1></div>
+  <div class="frame">
+    <iframe id="frame"></iframe>
+  </div>
+
+  <script>
+    const base = "https://script.google.com/macros/s/AKfycbxO4YJ6dLcuK_S4VovC064dhynYtpcLWXntZYYpbIm4wRj4dNKlbQ2CkguKwvJ8B4N6eg/exec";
+    const qs = new URLSearchParams(location.search);
+    const room = qs.get("room") || "sala-parto"; // default
+    document.getElementById("frame").src = `${base}?page=control&room=${encodeURIComponent(room)}`;
+    document.getElementById("ttl").textContent = `Control — ${room}`;
+  </script>
+</body>
+</html>
