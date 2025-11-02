@@ -63,7 +63,6 @@
     <div id="out"></div>
   </div>
 </div>
-
 <script>
 const APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbxO4YJ6dLcuK_S4VovC064dhynYtpcLWXntZYYpbIm4wRj4dNKlbQ2CkguKwvJ8B4N6eg/exec";
 const qs = new URLSearchParams(location.search);
@@ -74,11 +73,7 @@ function calcEndAt() {
   const now = new Date();
   const mins = parseInt(document.getElementById('mins').value || '0', 10);
   const hhmm = document.getElementById('hhmm').value;
-  if (hhmm) {
-    const [h,m] = hhmm.split(':').map(Number);
-    const t = new Date(); t.setHours(h,m,0,0); if (t < now) t.setDate(t.getDate()+1);
-    return t.getTime();
-  }
+  if (hhmm) { const [h,m]=hhmm.split(':').map(Number); const t=new Date(); t.setHours(h,m,0,0); if(t<now)t.setDate(t.getDate()+1); return t.getTime(); }
   if (mins > 0) return Date.now() + mins*60000;
   return '';
 }
@@ -86,19 +81,23 @@ function calcEndAt() {
 function jsonp(url, cb){
   const name = 'cb'+Math.random().toString(36).slice(2);
   window[name] = (resp)=>{ try{ delete window[name]; }catch{} cb(resp); };
-  const s = document.createElement('script'); s.src = url + `&format=jsonp&callback=${name}&_=${Date.now()}`;
+  const s = document.createElement('script');
+  s.src = url + `&format=jsonp&callback=${name}&_=${Date.now()}`;
   s.onerror = ()=> cb({ ok:false, error:'Error de red' });
   document.body.appendChild(s);
 }
 
 function save(){
-  const pin = document.getElementById('pin').value.trim();
+  const auth = document.getElementById('pin').value.trim();           // antes "pin"
   const state = document.getElementById('state').value;
   const message = document.getElementById('message').value.trim();
   const endAt = calcEndAt();
-  const url = `${APPS_SCRIPT}?action=updateRoom&id=${encodeURIComponent(roomId)}&pin=${encodeURIComponent(pin)}&state=${encodeURIComponent(state)}&message=${encodeURIComponent(message)}&endAt=${encodeURIComponent(endAt)}`;
+
+  // Usamos alias: a=ur (updateRoom) y auth=PIN
+  const url = `${APPS_SCRIPT}?a=ur&id=${encodeURIComponent(roomId)}&auth=${encodeURIComponent(auth)}&state=${encodeURIComponent(state)}&message=${encodeURIComponent(message)}&endAt=${encodeURIComponent(endAt)}`;
   jsonp(url, (r)=>{ document.getElementById('out').innerHTML = r && r.ok ? '<span class="ok">Actualizado ✔</span>' : '<span class="err">'+(r && r.error ? r.error : 'Error')+'</span>'; });
 }
+
 function quick(state){ document.getElementById('state').value = state; save(); }
 function plus(n){
   const hhmm = document.getElementById('hhmm');
