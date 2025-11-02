@@ -112,16 +112,18 @@ function save(){
   var message = document.getElementById('message').value.trim();
   var endAt = calcEndAt();
 
-  // usamos alias corto: a=ur
+  // Enviamos el PIN por dos alias: auth y k (para esquivar filtros de Safari)
   var url = APPS_SCRIPT
     + '?a=ur'
     + '&id=' + encodeURIComponent(roomId)
     + '&auth=' + encodeURIComponent(auth)
+    + '&k=' + encodeURIComponent(auth)                // <-- agregado
     + '&state=' + encodeURIComponent(state)
     + '&message=' + encodeURIComponent(message)
-    + '&endAt=' + encodeURIComponent(endAt);
+    + '&endAt=' + encodeURIComponent(endAt)
+    + '&_t=' + Date.now();                            // evita cache agresivo
 
-  // nombre de callback dinámico para evitar colisiones
+  // JSONP
   var cbName = 'cb' + Math.random().toString(36).slice(2);
   jsonpRequest(url, cbName, function (resp) {
     var out = document.getElementById('out');
@@ -132,7 +134,6 @@ function save(){
     }
   });
 }
-
 function quick(state){ document.getElementById('state').value = state; save(); }
 
 function plus(n){
