@@ -2,27 +2,37 @@
 <html lang="es">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Control de Sala</title>
+  <title>Redirigiendo al Control…</title>
   <style>
-    html,body{height:100%;margin:0;background:#fff}
-    .top{position:fixed;inset:0 0 auto 0;height:56px;display:flex;align-items:center;gap:12px;padding:0 14px;background:#ffffffee;border-bottom:1px solid #e5e7eb;backdrop-filter:blur(6px);z-index:2;font-family:system-ui,-apple-system,Inter,Segoe UI,Roboto,Arial}
-    .top h1{margin:0;font-size:16px;font-weight:800}
-    .frame{position:absolute;inset:56px 0 0 0}
-    iframe{width:100%;height:100%;border:0}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Inter,Segoe UI,Roboto,Arial}
+    .wrap{height:100%;display:grid;place-items:center;background:#fff}
+    .card{max-width:520px;padding:20px 22px;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 24px rgba(16,24,40,.06)}
+    h1{margin:0 0 8px 0;font-size:18px;font-weight:800}
+    p{margin:0 0 10px 0;color:#475569}
+    a.btn{display:inline-block;margin-top:8px;padding:10px 14px;border:1px solid #2563eb;border-radius:10px;font-weight:700;color:#2563eb;text-decoration:none}
   </style>
 </head>
 <body>
-  <div class="top"><h1 id="ttl">Control de Sala</h1></div>
-  <div class="frame">
-    <iframe id="frame"></iframe>
+<div class="wrap">
+  <div class="card">
+    <h1>Abriendo el Control…</h1>
+    <p>Si no se abre automáticamente, toca el botón.</p>
+    <a id="btn" class="btn" href="#" rel="noopener">Abrir control</a>
   </div>
+</div>
 
-  <script>
-    const base = "https://script.google.com/macros/s/AKfycbxO4YJ6dLcuK_S4VovC064dhynYtpcLWXntZYYpbIm4wRj4dNKlbQ2CkguKwvJ8B4N6eg/exec";
-    const qs = new URLSearchParams(location.search);
-    const room = qs.get("room") || "sala-parto"; // default
-    document.getElementById("frame").src = `${base}?page=control&room=${encodeURIComponent(room)}`;
-    document.getElementById("ttl").textContent = `Control — ${room}`;
-  </script>
+<script>
+  // URL base de tu Apps Script
+  const BASE = "https://script.google.com/macros/s/AKfycbxO4YJ6dLcuK_S4VovC064dhynYtpcLWXntZYYpbIm4wRj4dNKlbQ2CkguKwvJ8B4N6eg/exec";
+  const qs = new URLSearchParams(location.search);
+  const room = qs.get("room") || "sala-parto";
+  const target = `${BASE}?page=control&room=${encodeURIComponent(room)}`;
+
+  // 1) Redirige en la ventana principal (evita iframe y evita el 403 en iOS)
+  try { window.top.location.replace(target); } catch(e) { location.href = target; }
+
+  // 2) Botón manual por si el navegador bloquea la redirección
+  document.getElementById("btn").href = target;
+</script>
 </body>
 </html>
