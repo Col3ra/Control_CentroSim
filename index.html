@@ -64,48 +64,82 @@
   </div>
 </div>
 <script>
-const APPS_SCRIPT = "https://controlsentrosim.md-ahumadar.workers.dev/";
-// ...
-const url = `${APPS_SCRIPT}?a=ur&id=${encodeURIComponent(roomId)}&auth=${encodeURIComponent(auth)}&state=${encodeURIComponent(state)}&message=${encodeURIComponent(message)}&endAt=${encodeURIComponent(endAt)}`;
+/* ====== CONFIG ====== */
+const APPS_SCRIPT = "https://controlsentrosim.md-ahumadar.workers.dev"; // <- tu Worker
 const qs = new URLSearchParams(location.search);
 const roomId = qs.get("room") || "sala-parto";
 document.getElementById('title').textContent = 'Control — ' + roomId;
 
+/* ====== UTIL ====== */
 function calcEndAt() {
   const now = new Date();
   const mins = parseInt(document.getElementById('mins').value || '0', 10);
   const hhmm = document.getElementById('hhmm').value;
-  if (hhmm) { const [h,m]=hhmm.split(':').map(Number); const t=new Date(); t.setHours(h,m,0,0); if(t<now)t.setDate(t.getDate()+1); return t.getTime(); }
+  if (hhmm) {
+    const [h,m] = hhmm.split(':').map(Number);
+    const t = new Date(); t.setHours(h,m,0,0); if (t < now) t.setDate(t.getDate()+1);
+    return t.getTime();
+  }
   if (mins > 0) return Date.now() + mins*60000;
   return '';
 }
 
-function jsonp(url, cb){
-  const name = 'cb'+Math.random().toString(36).slice(2);
-  window[name] = (resp)=>{ try{ delete window[name]; }catch{} cb(resp); };
-  const s = document.createElement('script');
-  s.src = url + `&format=jsonp&callback=${name}&_=${Date.now()}`;
-  s.onerror = ()=> cb({ ok:false, error:'Error de red' });
+/* ====== JSONP ROBUSTO (sin const/let que genere TDZ) ====== */
+function jsonpRequest(url, callbackName, onDone) {
+  // callbackName es el nombre que registramos en window, onDone es la función que se llama con los datos
+  window[callbackName] = function (payload) {
+    try { delete window[callbackName]; } catch (_) {}
+    try { onDone && onDone(payload); } catch (e) {
+      console.error('Handler error:', e);
+      const out = document.getElementById('out');
+      if (out) out.innerHTML = '<span class="err">Error interno</span>';
+    }
+  };
+  var s = document.createElement('script');
+  s.async = true;
+  s.src = url + (url.indexOf('?')>-1 ? '&' : '?') + 'format=jsonp&callback=' + encodeURIComponent(callbackName) + '&_=' + Date.now();
+  s.onerror = function () {
+    var out = document.getElementById('out');
+    if (out) out.innerHTML = '<span class="err">Error de red</span>';
+  };
   document.body.appendChild(s);
 }
 
+/* ====== ACCIONES ====== */
 function save(){
-  const auth = document.getElementById('pin').value.trim();           // antes "pin"
-  const state = document.getElementById('state').value;
-  const message = document.getElementById('message').value.trim();
-  const endAt = calcEndAt();
+  var auth = document.getElementById('pin').value.trim();
+  var state = document.getElementById('state').value;
+  var message = document.getElementById('message').value.trim();
+  var endAt = calcEndAt();
 
-  // Usamos alias: a=ur (updateRoom) y auth=PIN
-  const url = `${APPS_SCRIPT}?a=ur&id=${encodeURIComponent(roomId)}&auth=${encodeURIComponent(auth)}&state=${encodeURIComponent(state)}&message=${encodeURIComponent(message)}&endAt=${encodeURIComponent(endAt)}`;
-  jsonp(url, (r)=>{ document.getElementById('out').innerHTML = r && r.ok ? '<span class="ok">Actualizado ✔</span>' : '<span class="err">'+(r && r.error ? r.error : 'Error')+'</span>'; });
+  // usamos alias corto: a=ur
+  var url = APPS_SCRIPT
+    + '?a=ur'
+    + '&id=' + encodeURIComponent(roomId)
+    + '&auth=' + encodeURIComponent(auth)
+    + '&state=' + encodeURIComponent(state)
+    + '&message=' + encodeURIComponent(message)
+    + '&endAt=' + encodeURIComponent(endAt);
+
+  // nombre de callback dinámico para evitar colisiones
+  var cbName = 'cb' + Math.random().toString(36).slice(2);
+  jsonpRequest(url, cbName, function (resp) {
+    var out = document.getElementById('out');
+    if (resp && resp.ok) {
+      out.innerHTML = '<span class="ok">Actualizado ✔</span>';
+    } else {
+      out.innerHTML = '<span class="err">' + (resp && resp.error ? resp.error : 'Error') + '</span>';
+    }
+  });
 }
 
 function quick(state){ document.getElementById('state').value = state; save(); }
+
 function plus(n){
-  const hhmm = document.getElementById('hhmm');
-  const mins = document.getElementById('mins');
-  const base = calcEndAt() || (Date.now()+n*60000);
-  const d = new Date(base + n*60000);
+  var hhmm = document.getElementById('hhmm');
+  var mins = document.getElementById('mins');
+  var base = calcEndAt() || (Date.now()+n*60000);
+  var d = new Date(base + n*60000);
   hhmm.value = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
   mins.value = '';
   save();
