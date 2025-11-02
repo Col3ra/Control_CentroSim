@@ -64,7 +64,9 @@
   </div>
 </div>
 <script>
-const APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbxO4YJ6dLcuK_S4VovC064dhynYtpcLWXntZYYpbIm4wRj4dNKlbQ2CkguKwvJ8B4N6eg/exec";
+const APPS_SCRIPT = "https://controlsentrosim.md-ahumadar.workers.dev/";
+// ...
+const url = `${APPS_SCRIPT}?a=ur&id=${encodeURIComponent(roomId)}&auth=${encodeURIComponent(auth)}&state=${encodeURIComponent(state)}&message=${encodeURIComponent(message)}&endAt=${encodeURIComponent(endAt)}`;
 const qs = new URLSearchParams(location.search);
 const roomId = qs.get("room") || "sala-parto";
 document.getElementById('title').textContent = 'Control — ' + roomId;
