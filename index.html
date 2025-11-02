@@ -1,38 +1,114 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Redirigiendo al Control…</title>
-  <style>
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Inter,Segoe UI,Roboto,Arial}
-    .wrap{height:100%;display:grid;place-items:center;background:#fff}
-    .card{max-width:520px;padding:20px 22px;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 24px rgba(16,24,40,.06)}
-    h1{margin:0 0 8px 0;font-size:18px;font-weight:800}
-    p{margin:0 0 10px 0;color:#475569}
-    a.btn{display:inline-block;margin-top:8px;padding:10px 14px;border:1px solid #2563eb;border-radius:10px;font-weight:700;color:#2563eb;text-decoration:none}
-  </style>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Control de Sala</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#ffffff; --ink:#0f172a; --muted:#64748b; --accent:#2563eb; --shadow:0 8px 24px rgba(16,24,40,.08); --radius:16px; }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#fff,#f7fafc);font-family:Inter,system-ui,Segoe UI,Roboto,Arial;color:var(--ink)}
+  .wrap{max-width:680px;margin:0 auto;padding:18px}
+  h1{font-size:22px;margin:8px 0 12px 0;font-weight:800}
+  .card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  input,select{width:100%;padding:12px 10px;border-radius:10px;border:1px solid #e5e7eb;font-size:14px}
+  button{padding:12px 14px;border-radius:10px;border:1px solid #e5e7eb;font-weight:800;background:#fff;cursor:pointer}
+  .b-primary{border-color:#2563eb;color:#2563eb}
+  .b-red{border-color:#fecaca;color:#991b1b}
+  .b-green{border-color:#bbf7d0;color:#065f46}
+  .b-amber{border-color:#fde68a;color:#92400e}
+  .ok{color:#16a34a;font-weight:700;margin-top:10px}
+  .err{color:#dc2626;font-weight:700;margin-top:10px}
+  .foot{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+</style>
 </head>
 <body>
 <div class="wrap">
+  <h1 id="title">Control de sala</h1>
   <div class="card">
-    <h1>Abriendo el Control…</h1>
-    <p>Si no se abre automáticamente, toca el botón.</p>
-    <a id="btn" class="btn" href="#" rel="noopener">Abrir control</a>
+    <label>PIN</label>
+    <input id="pin" type="password" placeholder="PIN de la sala" />
+    <label style="margin-top:10px">Estado</label>
+    <select id="state">
+      <option value="libre">Libre</option>
+      <option value="ocupada">En Simulación</option>
+      <option value="debrief">Debrief en curso</option>
+      <option value="preparacion">Preparación</option>
+      <option value="limpieza">Limpieza</option>
+      <option value="mantenimiento">Mantenimiento</option>
+      <option value="emergencia">Emergencia</option>
+    </select>
+    <label style="margin-top:10px">Mensaje (opcional)</label>
+    <input id="message" placeholder="Ej.: Guardar silencio" />
+    <div class="row">
+      <div style="flex:1">
+        <label>Duración (min, opcional)</label>
+        <input id="mins" type="number" placeholder="Ej. 45" min="0" />
+      </div>
+      <div style="flex:1">
+        <label>Fin exacto (HH:MM opcional)</label>
+        <input id="hhmm" type="time" />
+      </div>
+    </div>
+    <div class="foot">
+      <button class="b-red"   onclick="quick('ocupada')">En Simulación</button>
+      <button class="b-green" onclick="quick('libre')">Libre</button>
+      <button class="b-amber" onclick="quick('preparacion')">Preparación</button>
+      <button class="b-amber" onclick="quick('limpieza')">Limpieza</button>
+      <button class="b-primary" onclick="save()">Guardar cambios</button>
+      <button onclick="plus(15)">+15</button>
+      <button onclick="plus(30)">+30</button>
+    </div>
+    <div id="out"></div>
   </div>
 </div>
 
 <script>
-  // URL base de tu Apps Script
-  const BASE = "https://script.google.com/macros/s/AKfycbxO4YJ6dLcuK_S4VovC064dhynYtpcLWXntZYYpbIm4wRj4dNKlbQ2CkguKwvJ8B4N6eg/exec";
-  const qs = new URLSearchParams(location.search);
-  const room = qs.get("room") || "sala-parto";
-  const target = `${BASE}?page=control&room=${encodeURIComponent(room)}`;
+const APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbxO4YJ6dLcuK_S4VovC064dhynYtpcLWXntZYYpbIm4wRj4dNKlbQ2CkguKwvJ8B4N6eg/exec";
+const qs = new URLSearchParams(location.search);
+const roomId = qs.get("room") || "sala-parto";
+document.getElementById('title').textContent = 'Control — ' + roomId;
 
-  // 1) Redirige en la ventana principal (evita iframe y evita el 403 en iOS)
-  try { window.top.location.replace(target); } catch(e) { location.href = target; }
+function calcEndAt() {
+  const now = new Date();
+  const mins = parseInt(document.getElementById('mins').value || '0', 10);
+  const hhmm = document.getElementById('hhmm').value;
+  if (hhmm) {
+    const [h,m] = hhmm.split(':').map(Number);
+    const t = new Date(); t.setHours(h,m,0,0); if (t < now) t.setDate(t.getDate()+1);
+    return t.getTime();
+  }
+  if (mins > 0) return Date.now() + mins*60000;
+  return '';
+}
 
-  // 2) Botón manual por si el navegador bloquea la redirección
-  document.getElementById("btn").href = target;
+function jsonp(url, cb){
+  const name = 'cb'+Math.random().toString(36).slice(2);
+  window[name] = (resp)=>{ try{ delete window[name]; }catch{} cb(resp); };
+  const s = document.createElement('script'); s.src = url + `&format=jsonp&callback=${name}&_=${Date.now()}`;
+  s.onerror = ()=> cb({ ok:false, error:'Error de red' });
+  document.body.appendChild(s);
+}
+
+function save(){
+  const pin = document.getElementById('pin').value.trim();
+  const state = document.getElementById('state').value;
+  const message = document.getElementById('message').value.trim();
+  const endAt = calcEndAt();
+  const url = `${APPS_SCRIPT}?action=updateRoom&id=${encodeURIComponent(roomId)}&pin=${encodeURIComponent(pin)}&state=${encodeURIComponent(state)}&message=${encodeURIComponent(message)}&endAt=${encodeURIComponent(endAt)}`;
+  jsonp(url, (r)=>{ document.getElementById('out').innerHTML = r && r.ok ? '<span class="ok">Actualizado ✔</span>' : '<span class="err">'+(r && r.error ? r.error : 'Error')+'</span>'; });
+}
+function quick(state){ document.getElementById('state').value = state; save(); }
+function plus(n){
+  const hhmm = document.getElementById('hhmm');
+  const mins = document.getElementById('mins');
+  const base = calcEndAt() || (Date.now()+n*60000);
+  const d = new Date(base + n*60000);
+  hhmm.value = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  mins.value = '';
+  save();
+}
 </script>
 </body>
 </html>
